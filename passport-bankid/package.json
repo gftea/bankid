@@ -1,0 +1,21 @@
+{
+  "name": "passport-bankid",
+  "version": "1.0.0",
+  "description": "Swedish BankID authentication strategy for Passport ",
+  "main": "./lib",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bankid",
+    "strategy",
+    "passport"
+  ],
+  "author": "gftea",
+  "license": "ISC",
+  "dependencies": {
+    "passport-strategy": "^1.0.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
+  }
+}
