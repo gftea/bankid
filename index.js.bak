@@ -1,0 +1,62 @@
+const os = require("os");
+const dns = require("dns");
+let request = require("request-promise-native");
+const opn = require("opn");
+const fs = require("fs");
+const path = require("path");
+
+const pfxFile = path.resolve(
+    __dirname,
+    "resources/FPTestcert2_20150818_102329.pfx"
+  ),
+  caFile = path.resolve(__dirname, "resources/test-bankid-root-CA.pem");
+
+const getUSerIp = new Promise((resolve, reject) => {
+  dns.lookup(os.hostname(), (err, ip) => {
+    if (err) reject("lookup error");
+
+    dns.lookupService(ip, 80, (err, hostname) => {
+      if (err) reject("lookup service error");
+      dns.resolve(hostname, (err, ip) => {
+        if (err) reject("resovle error");
+        resolve(ip.shift());
+      });
+    });
+  });
+});
+
+request = request.defaults({
+  baseUrl: "https://appapi2.test.bankid.com/rp/v5",
+  method: "POST",
+  json: true,
+  ca: fs.readFileSync(caFile),
+  pfx: fs.readFileSync(pfxFile),
+  passphrase: "qwerty123"
+});
+
+const getOrderRef = getUSerIp
+  .then(endUserIp => {
+    return request({ uri: "/auth", body: { endUserIp } });
+  })
+  .then(res => {
+    const redirectUrl = "null";
+    const bankIdUrl = `bankid:///?autostarttoken=${
+      res.autoStartToken
+    }&redirect=${redirectUrl}`;
+
+    opn(bankIdUrl);
+
+    return res.orderRef;
+  })
+  .catch(err => console.log(err));
+
+getOrderRef.then(orderRef => {
+  console.log(orderRef);
+
+  let timer = setInterval(() => {
+    request({ uri: "/collect", body: { orderRef } }).then(res => {
+      console.log(res);
+      if (res.status === "complete") clearInterval(timer);
+    });
+  }, 2000);
+});

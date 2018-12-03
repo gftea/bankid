@@ -1,7 +1,7 @@
 const passport = require("passport-strategy"),
   util = require("util"),
-  opn = require("opn");
-
+  opn = require("opn"),
+  url = require("url");
 let request = require("request-promise-native");
 
 function Strategy(options, verify) {
@@ -26,7 +26,7 @@ util.inherits(Strategy, passport.Strategy);
 Strategy.prototype.authenticate = function(req, options) {
   options = options || {};
 
-  if (!req.body.endUserIp) return this.error("missing end user IP address!");
+  //if (!req.body.endUserIp) return this.error("missing end user IP address!");
 
   let self = this;
 
@@ -45,17 +45,22 @@ Strategy.prototype.authenticate = function(req, options) {
     passphrase: this._passphrase
   });
 
-  request({ uri: "/auth", body: { endUserIp: req.body.endUserIp } })
+  request({ uri: "/auth", body: { endUserIp: "127.0.0.1" } })
     .then(res => {
       if (!res["autoStartToken"])
         return self.fail("invalid request to BankID service");
 
+      const callbackURL = url.parse(
+        "http://localhost:3000/auth/bankid/callback"
+      ).href;
       const bankIdUrl = `bankid:///?autostarttoken=${
         res.autoStartToken
-      }&redirect=null`;
+      }&redirect=${callbackURL}`;
+      console.log(res.autoStartToken);
+      req.autoStartToken = res.autoStartToken;
 
-      // simulate lauching bankid app
-      opn(bankIdUrl, { wait: false });
+      self.redirect(bankIdUrl);
+      return this._verify({ personalNumber: 1234567890 }, verified);
 
       let timer = setInterval(() => {
         request({ uri: "/collect", body: { orderRef: res.orderRef } }).then(

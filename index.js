@@ -12,7 +12,7 @@ passport.use(
       passphrase: "qwerty123"
     },
     (user, done) => {
-      console.log("bankid user data: ", user);
+      console.log("passport authenticate callback: bankid user data: ", user);
       done(null, user);
     }
   )
@@ -24,16 +24,14 @@ app.use(passport.initialize());
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
-app.get("/", (req, res) => res.send("redirect after login bankid OK!"));
+// routes
 
-app.post(
-  "/login",
-  passport.authenticate("bankid", { session: false }),
-  (req, res) => {
-    console.log("auth succeed!!");
-    res.redirect("/");
-  }
-);
+app.get("/auth/login", passport.authenticate("bankid", { session: false }));
+
+app.get("/auth/bankid/callback", (req, res) => {
+  console.log("bankid app callback called!!");
+  res.redirect("/");
+});
 
 const port = 5000;
 app.listen(5000, () => console.log(`start server on ${port}`));
